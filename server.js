@@ -7,7 +7,6 @@ const { WebSocketServer } = require('ws');
 
 const { findAvailablePort } = require('./lib/port-finder');
 const { SessionManager } = require('./lib/session-manager');
-const { Persistence } = require('./lib/persistence');
 
 const DEV_MODE = process.argv.includes('--dev');
 
@@ -23,10 +22,9 @@ const LIB_DIR = path.join(__dirname, 'lib');
 
 async function main() {
   const port = await findAvailablePort(3001);
-  const persistence = new Persistence();
-  const sessionManager = new SessionManager(persistence);
+  const sessionManager = new SessionManager();
 
-  // Load persisted sessions
+  // Initialize sessions (start fresh)
   await sessionManager.loadSessions();
 
   // HTTP server for static files (no caching in dev mode)

@@ -8,6 +8,18 @@
   let editingSessionId = null;
   let pendingCreate = false;
 
+  // Debounce utility - batches rapid calls to prevent DOM race conditions
+  function debounce(fn, delay) {
+    let timeout;
+    return function(...args) {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => fn.apply(this, args), delay);
+    };
+  }
+
+  // Debounced render for WebSocket updates - prevents click race conditions
+  const debouncedRenderSessions = debounce(() => renderSessions(), 16);
+
   // DOM elements
   const sessionsList = document.getElementById('sessions-list');
   const archivedList = document.getElementById('archived-list');
@@ -27,10 +39,10 @@
   function initTerminal() {
     terminal = new Terminal({
       theme: {
-        background: '#1a1a2e',
-        foreground: '#eee',
-        cursor: '#e94560',
-        selection: 'rgba(233, 69, 96, 0.3)',
+        background: '#1a1a1a',
+        foreground: '#e8e8e8',
+        cursor: '#d97757',
+        selection: 'rgba(217, 119, 87, 0.3)',
       },
       fontFamily: 'Menlo, Monaco, "Courier New", monospace',
       fontSize: 14,
@@ -107,6 +119,33 @@
       archivedHeader.classList.toggle('collapsed');
       archivedList.classList.toggle('collapsed');
     });
+
+    // Event delegation for session list clicks (archive + selection)
+    sessionsList.addEventListener('click', (e) => {
+      const archiveBtn = e.target.closest('.archive-btn-inline');
+      if (archiveBtn) {
+        e.stopPropagation();
+        const sessionId = archiveBtn.dataset.id;
+        // If archiving active session, switch to another first
+        if (activeSessionId === sessionId) {
+          const otherSession = sessions.find(s => !s.archived && s.id !== sessionId);
+          if (otherSession) {
+            switchSession(otherSession.id);
+          } else {
+            activeSessionId = null;
+            showNoSession();
+          }
+        }
+        send({ type: 'archive', sessionId });
+        return;
+      }
+
+      // Session selection
+      const sessionItem = e.target.closest('.session-item');
+      if (sessionItem && !e.target.closest('button') && !e.target.closest('input')) {
+        switchSession(sessionItem.dataset.id);
+      }
+    });
   }
 
   function send(data) {
@@ -130,7 +169,7 @@
             return;
           }
         }
-        renderSessions();
+        debouncedRenderSessions();
         break;
 
       case 'output':
@@ -150,7 +189,9 @@
         const session = sessions.find((s) => s.id === msg.sessionId);
         if (session) {
           session.status = msg.status;
-          renderSessions();
+          // Surgical DOM update - just update the status dot, don't re-render
+          // This preserves hover state so clicks still work during rapid output
+          updateSessionStatus(msg.sessionId, msg.status);
         }
         break;
 
@@ -159,7 +200,7 @@
         if (sess) {
           sess.summary = msg.summary;
           sess.originalPrompt = msg.originalPrompt;
-          renderSessions();
+          debouncedRenderSessions();
         }
         break;
 
@@ -170,30 +211,48 @@
     }
   }
 
+  // Surgical update for status changes - doesn't replace DOM, preserves hover state
+  function updateSessionStatus(sessionId, status) {
+    const sessionEl = document.querySelector(`.session-item[data-id="${sessionId}"]`);
+    if (!sessionEl) return;
+
+    // Update status dot class
+    const dot = sessionEl.querySelector('.status-dot');
+    if (dot) {
+      dot.className = `status-dot ${status}`;
+    }
+
+    // Update badge (waiting/draft indicator)
+    const meta = sessionEl.querySelector('.session-meta');
+    if (meta) {
+      // Remove existing badges
+      meta.querySelectorAll('.waiting-badge, .draft-badge').forEach(b => b.remove());
+
+      // Add new badge if needed
+      if (status === 'waiting') {
+        const badge = document.createElement('span');
+        badge.className = 'waiting-badge';
+        badge.textContent = '?';
+        meta.insertBefore(badge, meta.firstChild);
+      } else if (status === 'draft') {
+        const badge = document.createElement('span');
+        badge.className = 'draft-badge';
+        badge.textContent = '✎';
+        meta.insertBefore(badge, meta.firstChild);
+      }
+    }
+  }
+
   function renderSessions() {
-    const active = sessions.filter((s) => !s.archived);
-    const archived = sessions.filter((s) => s.archived);
+    const sortByDate = (a, b) => new Date(b.lastActivity || b.createdAt) - new Date(a.lastActivity || a.createdAt);
+    const active = sessions.filter((s) => !s.archived).sort(sortByDate);
+    const archived = sessions.filter((s) => s.archived).sort(sortByDate);
 
     sessionsList.innerHTML = active.map((s) => renderSessionItem(s, false)).join('');
     archivedList.innerHTML = archived.map((s) => renderSessionItem(s, true)).join('');
     archivedCount.textContent = `(${archived.length})`;
 
-    // Add event listeners
-    document.querySelectorAll('.session-item').forEach((el) => {
-      const id = el.dataset.id;
-      el.addEventListener('click', (e) => {
-        // Don't switch if clicking a button or input
-        if (e.target.closest('button') || e.target.closest('input')) return;
-        switchSession(id);
-      });
-    });
-
-    document.querySelectorAll('.archive-btn-inline').forEach((btn) => {
-      btn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        send({ type: 'archive', sessionId: btn.dataset.id });
-      });
-    });
+    // Note: session-item clicks and archive-btn-inline are handled via delegation in initEventListeners()
 
     document.querySelectorAll('.unarchive-btn').forEach((btn) => {
       btn.addEventListener('click', () => {
@@ -203,12 +262,10 @@
 
     document.querySelectorAll('.delete-btn').forEach((btn) => {
       btn.addEventListener('click', () => {
-        if (confirm('Delete this session?')) {
-          send({ type: 'delete', sessionId: btn.dataset.id });
-          if (activeSessionId === btn.dataset.id) {
-            activeSessionId = null;
-            showNoSession();
-          }
+        send({ type: 'delete', sessionId: btn.dataset.id });
+        if (activeSessionId === btn.dataset.id) {
+          activeSessionId = null;
+          showNoSession();
         }
       });
     });
@@ -259,13 +316,20 @@
         ? '<span class="draft-badge">✎</span>'
         : '';
 
+    const timeAgo = relativeTime(session.lastActivity || session.createdAt);
+
     return `
       <li class="session-item ${isActive ? 'active' : ''}" data-id="${session.id}">
         <div class="session-row">
           <span class="status-dot ${session.status}"></span>
-          ${statusBadge}
-          ${contentHtml}
-          <div class="session-actions-inline">${actions}</div>
+          <div class="session-content">
+            <div class="session-meta">
+              ${statusBadge}
+              <span class="session-time">${timeAgo}</span>
+              <div class="session-actions-inline">${actions}</div>
+            </div>
+            ${contentHtml}
+          </div>
         </div>
       </li>
     `;
@@ -313,6 +377,18 @@
     const div = document.createElement('div');
     div.textContent = str;
     return div.innerHTML;
+  }
+
+  function relativeTime(isoString) {
+    if (!isoString) return '';
+    const diff = Date.now() - new Date(isoString).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return 'now';
+    if (mins < 60) return `${mins}m`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours}h`;
+    const days = Math.floor(hours / 24);
+    return `${days}d`;
   }
 
   // Start the app

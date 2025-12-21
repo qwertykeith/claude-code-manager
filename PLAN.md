@@ -307,26 +307,98 @@ Session card shows summary text directly (no separate name/summary). Archive `×
 
 ## Distribution
 
-### npm package
+### Option 1: npm publish (for public distribution)
 
-```json
-{
-  "name": "claude-manager",
-  "bin": {
-    "claude-manager": "./server.js"
-  }
-}
+Publish to npm registry:
+
+```bash
+npm publish
 ```
 
-User runs: `npx claude-manager`
+Recipients install globally:
 
-### Single binary
-
+```bash
+npm install -g claude-manager
+claude-manager
 ```
-npx pkg server.js --targets node18-macos-x64,node18-linux-x64,node18-win-x64
+
+Or run directly without installing:
+
+```bash
+npx claude-manager
 ```
 
-Produces standalone executables for each platform.
+### Option 2: npm pack (shareable tarball)
+
+Create a tarball for sharing directly:
+
+```bash
+npm pack
+# Creates: claude-manager-1.0.0.tgz
+```
+
+Send the `.tgz` file. Recipient installs with:
+
+```bash
+npm install -g ./claude-manager-1.0.0.tgz
+claude-manager
+```
+
+### Option 3: Single binary with pkg (no Node.js required)
+
+Build standalone executables for all platforms:
+
+```bash
+# Install pkg
+npm install -g pkg
+
+# Build for all platforms
+npx pkg . --targets node18-macos-arm64,node18-macos-x64,node18-linux-x64,node18-win-x64 --out-path dist
+
+# Or just current platform
+npx pkg . --output claude-manager
+```
+
+Produces executables that run without Node.js installed.
+
+**Note:** node-pty requires native compilation, so binaries are platform-specific.
+
+### Option 4: Single binary with Bun
+
+If you have Bun installed:
+
+```bash
+bun build ./server.js --compile --outfile claude-manager
+```
+
+Produces a single executable for your current platform.
+
+### Option 5: Zip for manual distribution
+
+For quick sharing where recipient has Node.js:
+
+```bash
+zip -r claude-manager.zip . -x "node_modules/*" -x ".git/*" -x "*.tgz"
+```
+
+Recipient extracts and runs:
+
+```bash
+unzip claude-manager.zip -d claude-manager
+cd claude-manager
+npm install
+npm start
+```
+
+### Distribution summary
+
+| Method | Recipient needs | Best for |
+|--------|-----------------|----------|
+| npm publish | Node.js + npm | Public distribution |
+| npm pack | Node.js + npm | Private sharing to devs |
+| pkg binary | Nothing | Non-technical users |
+| bun binary | Nothing | Single-platform, fast build |
+| Zip | Node.js + npm | Quick sharing, full source |
 
 ---
 
