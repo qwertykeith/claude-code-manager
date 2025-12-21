@@ -1,0 +1,23 @@
+{
+  "name": "claude-manager",
+  "version": "1.0.0",
+  "description": "Local web app for managing multiple Claude Code terminal sessions",
+  "main": "server.js",
+  "bin": {
+    "claude-manager": "./server.js"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js --dev"
+  },
+  "dependencies": {
+    "chokidar": "^3.6.0",
+    "node-pty": "^1.0.0",
+    "open": "^10.1.0",
+    "ws": "^8.18.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "license": "MIT"
+}
