@@ -6,7 +6,18 @@ I missed the agent workflow in cursor when I moved to CC exclusively so made thi
 
 ## Run locally
 
-Run this in the directory you're working in
+Run from the directory you want to work in:
+
+```bash
+npx github:qwertykeith/claude-manager
+```
+
+Or install globally:
+
+```bash
+npm install -g github:qwertykeith/claude-manager
+claude-manager
+```
 
 ## Requirements
 
