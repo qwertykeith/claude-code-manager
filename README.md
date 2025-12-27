@@ -18,6 +18,13 @@ claude-manager
 
 > **Note:** npx doesn't work reliably due to native module issues with node-pty.
 
+## Upgrade
+
+```bash
+npm uninstall -g claude-manager
+npm install -g github:qwertykeith/claude-manager
+```
+
 ## Requirements
 
 - Node.js 18+

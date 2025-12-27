@@ -8,7 +8,8 @@
   },
   "scripts": {
     "start": "node server.js",
-    "dev": "node server.js --dev"
+    "dev": "node server.js --dev",
+    "postinstall": "node scripts/fix-pty-permissions.js"
   },
   "dependencies": {
     "chokidar": "^3.6.0",
