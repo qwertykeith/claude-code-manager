@@ -163,6 +163,55 @@
         switchSession(sessionItem.dataset.id);
       }
     });
+
+    // Event delegation for archived list (unarchive + delete)
+    archivedList.addEventListener('click', (e) => {
+      const unarchiveBtn = e.target.closest('.unarchive-btn');
+      if (unarchiveBtn) {
+        send({ type: 'unarchive', sessionId: unarchiveBtn.dataset.id });
+        return;
+      }
+
+      const deleteBtn = e.target.closest('.delete-btn');
+      if (deleteBtn) {
+        const sessionId = deleteBtn.dataset.id;
+        send({ type: 'delete', sessionId });
+        if (activeSessionId === sessionId) {
+          activeSessionId = null;
+          showNoSession();
+        }
+      }
+    });
+
+    // Event delegation for double-click to edit (both lists)
+    function handleDblClick(e) {
+      const summaryText = e.target.closest('.session-summary-text');
+      if (summaryText) {
+        editingSessionId = summaryText.dataset.id;
+        renderSessions();
+        const input = document.querySelector(`input[data-id="${editingSessionId}"]`);
+        if (input) {
+          input.focus();
+          input.select();
+        }
+      }
+    }
+    sessionsList.addEventListener('dblclick', handleDblClick);
+    archivedList.addEventListener('dblclick', handleDblClick);
+
+    // Event delegation for name input (blur + enter to save)
+    function handleInputEvent(e) {
+      const input = e.target.closest('.session-name-input');
+      if (!input) return;
+
+      if (e.type === 'blur' || (e.type === 'keydown' && e.key === 'Enter')) {
+        finishRename(input.dataset.id, input.value);
+      }
+    }
+    sessionsList.addEventListener('blur', handleInputEvent, true); // capture phase for blur
+    sessionsList.addEventListener('keydown', handleInputEvent);
+    archivedList.addEventListener('blur', handleInputEvent, true);
+    archivedList.addEventListener('keydown', handleInputEvent);
   }
 
   function send(data) {
@@ -312,22 +361,24 @@
     }
 
     // Update badge (waiting/draft indicator)
-    const meta = sessionEl.querySelector('.session-meta');
-    if (meta) {
-      // Remove existing badges
-      meta.querySelectorAll('.waiting-badge, .draft-badge').forEach(b => b.remove());
+    const content = sessionEl.querySelector('.session-content');
+    if (content) {
+      // Remove existing badges container
+      const oldBadges = content.querySelector('.session-badges');
+      if (oldBadges) oldBadges.remove();
 
       // Add new badge if needed
-      if (status === 'waiting') {
+      if (status === 'waiting' || status === 'draft') {
+        const badgesDiv = document.createElement('div');
+        badgesDiv.className = 'session-badges';
         const badge = document.createElement('span');
-        badge.className = 'waiting-badge';
-        badge.textContent = '?';
-        meta.insertBefore(badge, meta.firstChild);
-      } else if (status === 'draft') {
-        const badge = document.createElement('span');
-        badge.className = 'draft-badge';
-        badge.textContent = '✎';
-        meta.insertBefore(badge, meta.firstChild);
+        badge.className = status === 'waiting' ? 'waiting-badge' : 'draft-badge';
+        badge.textContent = status === 'waiting' ? '?' : '✎';
+        badgesDiv.appendChild(badge);
+        const header = content.querySelector('.session-header');
+        if (header) {
+          header.after(badgesDiv);
+        }
       }
     }
   }
@@ -337,24 +388,16 @@
     const sessionEl = document.querySelector(`.session-item[data-id="${sessionId}"]`);
     if (!sessionEl) return;
 
-    const meta = sessionEl.querySelector('.session-meta');
-    if (!meta) return;
-
-    let ctxEl = meta.querySelector('.context-indicator');
-    if (!ctxEl) {
-      // Create on first update - insert before session-time
-      ctxEl = document.createElement('span');
-      ctxEl.className = 'context-indicator';
-      const timeEl = meta.querySelector('.session-time');
-      if (timeEl) {
-        meta.insertBefore(ctxEl, timeEl);
-      } else {
-        meta.appendChild(ctxEl);
-      }
+    let footer = sessionEl.querySelector('.session-footer');
+    if (!footer) {
+      const content = sessionEl.querySelector('.session-content');
+      if (!content) return;
+      footer = document.createElement('div');
+      footer.className = 'session-footer';
+      content.appendChild(footer);
     }
 
-    ctxEl.textContent = display;
-    ctxEl.className = 'context-indicator' + (pct >= 95 ? ' critical' : pct >= 80 ? ' warning' : '');
+    footer.innerHTML = renderContextPie(pct);
   }
 
   function renderSessions() {
@@ -365,47 +408,7 @@
     sessionsList.innerHTML = active.map((s) => renderSessionItem(s, false)).join('');
     archivedList.innerHTML = archived.map((s) => renderSessionItem(s, true)).join('');
     archivedCount.textContent = `(${archived.length})`;
-
-    // Note: session-item clicks and archive-btn-inline are handled via delegation in initEventListeners()
-
-    document.querySelectorAll('.unarchive-btn').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        send({ type: 'unarchive', sessionId: btn.dataset.id });
-      });
-    });
-
-    document.querySelectorAll('.delete-btn').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        send({ type: 'delete', sessionId: btn.dataset.id });
-        if (activeSessionId === btn.dataset.id) {
-          activeSessionId = null;
-          showNoSession();
-        }
-      });
-    });
-
-    document.querySelectorAll('.session-summary-text').forEach((el) => {
-      el.addEventListener('dblclick', () => {
-        editingSessionId = el.dataset.id;
-        renderSessions();
-        const input = document.querySelector(`input[data-id="${editingSessionId}"]`);
-        if (input) {
-          input.focus();
-          input.select();
-        }
-      });
-    });
-
-    document.querySelectorAll('.session-name-input').forEach((input) => {
-      input.addEventListener('blur', () => {
-        finishRename(input.dataset.id, input.value);
-      });
-      input.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-          finishRename(input.dataset.id, input.value);
-        }
-      });
-    });
+    // All event handlers use delegation in initEventListeners() - no per-render listeners needed
   }
 
   function renderSessionItem(session, isArchived) {
@@ -430,24 +433,23 @@
         ? '<span class="draft-badge">✎</span>'
         : '';
 
-    const contextIndicator = session.contextDisplay
-      ? `<span class="context-indicator${session.contextPct >= 95 ? ' critical' : session.contextPct >= 80 ? ' warning' : ''}">${session.contextDisplay}</span>`
-      : '';
-
     const timeAgo = relativeTime(session.lastActivity || session.createdAt);
+    const contextPie = session.contextPct !== undefined ? renderContextPie(session.contextPct) : '';
 
     return `
       <li class="session-item ${isActive ? 'active' : ''}" data-id="${session.id}">
         <div class="session-row">
           <span class="status-dot ${session.status}"></span>
           <div class="session-content">
-            <div class="session-meta">
-              ${statusBadge}
-              ${contextIndicator}
-              <span class="session-time">${timeAgo}</span>
-              <div class="session-actions-inline">${actions}</div>
+            <div class="session-header">
+              ${contentHtml}
+              <div class="session-end">
+                <span class="session-time">${timeAgo}</span>
+                <div class="session-actions-inline">${actions}</div>
+              </div>
             </div>
-            ${contentHtml}
+            <div class="session-badges">${statusBadge}</div>
+            <div class="session-footer">${contextPie}</div>
           </div>
         </div>
       </li>
@@ -496,6 +498,44 @@
     const div = document.createElement('div');
     div.textContent = str;
     return div.innerHTML;
+  }
+
+  // Mini pie chart showing context usage with milestone markers
+  function renderContextPie(pct) {
+    const size = 18;
+    const stroke = 2.5;
+    const r = (size - stroke) / 2;
+    const c = size / 2;
+    const circumference = 2 * Math.PI * r;
+    const filled = (pct / 100) * circumference;
+
+    // Colors (using hex since CSS vars don't work in inline SVG)
+    const bgColor = '#3a3a3a';
+    let fillColor = '#8b8b8b'; // gray
+    if (pct >= 95) fillColor = '#e85c5c'; // red
+    else if (pct >= 80) fillColor = '#d4a853'; // yellow
+
+    // Tick marks at 80% and 95%
+    const ticks = [80, 95].map(threshold => {
+      const angle = (threshold / 100) * 360 - 90;
+      const rad = angle * Math.PI / 180;
+      const x1 = c + (r - 2) * Math.cos(rad);
+      const y1 = c + (r - 2) * Math.sin(rad);
+      const x2 = c + (r + 2) * Math.cos(rad);
+      const y2 = c + (r + 2) * Math.sin(rad);
+      const color = pct >= threshold ? (threshold >= 95 ? '#e85c5c' : '#d4a853') : '#555';
+      return `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="${color}" stroke-width="1.5"/>`;
+    }).join('');
+
+    return `<div class="context-pie" title="${pct}% context used (80% warn, 95% compaction)">
+      <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+        <circle cx="${c}" cy="${c}" r="${r}" fill="none" stroke="${bgColor}" stroke-width="${stroke}"/>
+        <circle cx="${c}" cy="${c}" r="${r}" fill="none" stroke="${fillColor}" stroke-width="${stroke}"
+          stroke-dasharray="${filled.toFixed(1)} ${circumference.toFixed(1)}" stroke-linecap="round"
+          transform="rotate(-90 ${c} ${c})"/>
+        ${ticks}
+      </svg>
+    </div>`;
   }
 
   function relativeTime(isoString) {

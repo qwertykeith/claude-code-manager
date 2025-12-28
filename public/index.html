@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Claude Manager</title>
+  <title>Claude Code Manager</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/xterm@5.3.0/css/xterm.css">
   <link rel="stylesheet" href="style.css">
 </head>
@@ -19,16 +19,20 @@
       <div id="usage-display" class="usage-display">
         <div class="usage-item" id="usage-session-container" title="Session usage (5hr window)">
           <span class="usage-label">5hr</span>
-          <div class="usage-bar"><div class="usage-bar-fill" id="usage-session-bar"></div></div>
+          <div class="usage-bar">
+            <div class="usage-bar-fill" id="usage-session-bar"></div>
+          </div>
           <span class="usage-time" id="usage-session-time">--</span>
         </div>
         <div class="usage-item" id="usage-weekly-container" title="Weekly usage (all models)">
           <span class="usage-label">Wk</span>
-          <div class="usage-bar"><div class="usage-bar-fill" id="usage-weekly-bar"></div></div>
+          <div class="usage-bar">
+            <div class="usage-bar-fill" id="usage-weekly-bar"></div>
+          </div>
           <span class="usage-time" id="usage-weekly-time">--</span>
         </div>
       </div>
-      <h1>Claude Manager</h1>
+      <h1>Claude Code Manager</h1>
     </header>
 
     <div class="main">

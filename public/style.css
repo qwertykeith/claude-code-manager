@@ -239,8 +239,16 @@ body {
 
 .session-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
+  position: relative;
+}
+
+.session-badges {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+  min-height: 18px;
 }
 
 .session-row {
@@ -330,24 +338,20 @@ body {
   letter-spacing: 0.02em;
 }
 
-.context-indicator {
-  font-size: 11px;
-  color: var(--text-secondary);
-  font-variant-numeric: tabular-nums;
-  padding: 2px 6px;
-  background: var(--bg-tertiary);
-  border-radius: 4px;
-  flex-shrink: 0;
+.session-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 6px;
+  min-height: 18px;
 }
 
-.context-indicator.warning {
-  color: var(--warning);
-  background: rgba(212, 168, 83, 0.15);
+.context-pie {
+  opacity: 0.6;
+  transition: opacity 0.15s;
 }
 
-.context-indicator.critical {
-  color: #e85c5c;
-  background: rgba(232, 92, 92, 0.15);
+.session-item:hover .context-pie {
+  opacity: 1;
 }
 
 .status-dot.idle {
@@ -419,35 +423,33 @@ body {
   color: #fff;
 }
 
+.session-end {
+  margin-left: auto;
+  flex-shrink: 0;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
 .session-time {
   font-size: 11px;
   color: var(--text-secondary);
-  flex-shrink: 0;
   opacity: 0.6;
   font-variant-numeric: tabular-nums;
   transition: opacity 0.15s ease;
-  margin-left: auto;
 }
 
 .session-item:hover .session-time {
   opacity: 0;
 }
 
-.session-actions {
-  display: flex;
-  gap: 4px;
-  margin-top: 8px;
-  padding-left: 16px;
-}
-
 .session-actions-inline {
-  display: flex;
-  gap: 4px;
-  flex-shrink: 0;
   position: absolute;
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%);
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.15s ease;
@@ -492,7 +494,8 @@ body {
 }
 
 #terminal.visible {
-  display: block;
+  display: flex;
+  flex-direction: column;
 }
 
 .no-session {
@@ -512,7 +515,7 @@ body {
 
 /* xterm customization */
 .xterm {
-  height: 100%;
+  flex: 1;
   padding: 8px;
 }
 

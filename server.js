@@ -11,6 +11,15 @@ const { SessionManager } = require('./lib/session-manager');
 const { UsageTracker, PLAN_LIMITS } = require('./lib/usage-tracker');
 const { ContextTracker } = require('./lib/context-tracker');
 
+// Debounce helper - batches rapid calls, only runs once after delay
+function debounce(fn, delay) {
+  let timeout;
+  return function(...args) {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => fn.apply(this, args), delay);
+  };
+}
+
 const DEV_MODE = process.argv.includes('--dev');
 
 const MIME_TYPES = {
@@ -113,12 +122,43 @@ async function main() {
   // WebSocket server
   const wss = new WebSocketServer({ server });
 
+  // Per-session debounced context refresh (500ms delay batches rapid output events)
+  const contextRefreshers = new Map();
+  function getContextRefresher(sessionId, cwd) {
+    if (!contextRefreshers.has(sessionId)) {
+      contextRefreshers.set(sessionId, debounce(async () => {
+        const context = await contextTracker.getContextForCwd(cwd);
+        if (context) {
+          broadcast(wss, { type: 'context', sessionId, ...context });
+        }
+      }, 500));
+    }
+    return contextRefreshers.get(sessionId);
+  }
+
   wss.on('connection', async (ws) => {
     // Send current sessions on connect
     ws.send(JSON.stringify({
       type: 'sessions',
       sessions: sessionManager.getAllSessions(),
     }));
+
+    // Send context for active sessions - throttled to avoid spawn storm
+    const activeSessions = [...sessionManager.sessions.entries()]
+      .filter(([, s]) => !s.archived && s.cwd);
+
+    // Stagger context fetches 100ms apart (max 3 concurrent)
+    let idx = 0;
+    for (const [id, session] of activeSessions) {
+      setTimeout(() => {
+        contextTracker.getContextForCwd(session.cwd).then((context) => {
+          if (context && ws.readyState === ws.OPEN) {
+            ws.send(JSON.stringify({ type: 'context', sessionId: id, ...context }));
+          }
+        });
+      }, idx * 100);
+      idx++;
+    }
 
     // Send usage data on connect - start with estimate, then send accurate
     const estimateUsage = await usageTracker.getUsage();
@@ -147,7 +187,7 @@ async function main() {
         if (!validateMessage(msg)) {
           return; // Silently ignore invalid messages
         }
-        handleMessage(ws, msg, sessionManager, wss);
+        handleMessage(ws, msg, sessionManager, wss, contextTracker);
       } catch (e) {
         // JSON parse error - ignore malformed messages
       }
@@ -166,17 +206,14 @@ async function main() {
     });
   });
 
-  sessionManager.on('output', async ({ sessionId, data }) => {
+  sessionManager.on('output', ({ sessionId, data }) => {
     broadcast(wss, { type: 'output', sessionId, data });
 
-    // Refresh context for this session (invalidate cache first)
+    // Debounced context refresh - batches rapid output events
     const session = sessionManager.sessions.get(sessionId);
     if (session?.cwd) {
       contextTracker.invalidate(session.cwd);
-      const context = await contextTracker.getContextForCwd(session.cwd);
-      if (context) {
-        broadcast(wss, { type: 'context', sessionId, ...context });
-      }
+      getContextRefresher(sessionId, session.cwd)();
     }
   });
 
@@ -248,7 +285,7 @@ async function main() {
   });
 }
 
-function handleMessage(ws, msg, sessionManager, wss) {
+function handleMessage(ws, msg, sessionManager, wss, contextTracker) {
   switch (msg.type) {
     case 'create':
       sessionManager.createSession();
