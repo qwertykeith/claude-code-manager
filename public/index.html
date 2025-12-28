@@ -11,6 +11,18 @@
   <div class="app">
     <header class="header">
       <button id="new-session" class="btn btn-primary">+ New Session</button>
+      <div id="usage-display" class="usage-display">
+        <span class="usage-item">
+          <span class="usage-label">5hr:</span>
+          <span id="usage-5hr">--</span>
+        </span>
+        <select id="plan-selector" class="plan-selector" title="Select your Claude plan">
+          <option value="">Plan</option>
+          <option value="pro">Pro</option>
+          <option value="max100">Max $100</option>
+          <option value="max200">Max $200</option>
+        </select>
+      </div>
       <h1>Claude Manager</h1>
     </header>
 

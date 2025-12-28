@@ -46,6 +46,53 @@ body {
   font-weight: 600;
 }
 
+.usage-display {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}
+
+.usage-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.usage-label {
+  color: var(--text-secondary);
+  opacity: 0.7;
+}
+
+#usage-5hr {
+  color: var(--text-primary);
+  font-weight: 500;
+  cursor: help;
+}
+
+.plan-selector {
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  outline: none;
+}
+
+.plan-selector:hover {
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+
+.plan-selector:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(217, 119, 87, 0.2);
+}
+
 .btn {
   padding: 8px 16px;
   border: none;

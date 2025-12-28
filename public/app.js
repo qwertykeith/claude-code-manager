@@ -28,12 +28,30 @@
   const terminalEl = document.getElementById('terminal');
   const noSessionEl = document.getElementById('no-session');
   const newSessionBtn = document.getElementById('new-session');
+  const usage5hrEl = document.getElementById('usage-5hr');
+  const planSelectorEl = document.getElementById('plan-selector');
+
+  // State
+  let planLimits = {};
+  let currentUsage = null;
 
   // Initialize
   function init() {
     initTerminal();
     initWebSocket();
     initEventListeners();
+    initPlanSelector();
+  }
+
+  function initPlanSelector() {
+    // Load saved plan
+    const savedPlan = localStorage.getItem('claudePlan') || '';
+    planSelectorEl.value = savedPlan;
+
+    planSelectorEl.addEventListener('change', () => {
+      localStorage.setItem('claudePlan', planSelectorEl.value);
+      updateUsageDisplay();
+    });
   }
 
   function initTerminal() {
@@ -208,6 +226,29 @@
         console.log('[dev] Reloading page...');
         location.reload();
         break;
+
+      case 'usage':
+        currentUsage = msg.usage;
+        planLimits = msg.planLimits || {};
+        updateUsageDisplay();
+        break;
+    }
+  }
+
+  function updateUsageDisplay() {
+    if (!currentUsage) return;
+
+    const messages = currentUsage.fiveHour.messages;
+    const selectedPlan = planSelectorEl.value;
+
+    if (selectedPlan && planLimits[selectedPlan]) {
+      const limit = planLimits[selectedPlan];
+      const pct = Math.round((messages / limit) * 100);
+      usage5hrEl.textContent = `~${pct}%`;
+      usage5hrEl.title = `~${messages} / ${limit} messages (approx)`;
+    } else {
+      usage5hrEl.textContent = `~${messages} msgs`;
+      usage5hrEl.title = 'Select a plan to see percentage';
     }
   }
 

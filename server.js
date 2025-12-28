@@ -7,6 +7,7 @@ const { WebSocketServer } = require('ws');
 
 const { findAvailablePort } = require('./lib/port-finder');
 const { SessionManager } = require('./lib/session-manager');
+const { UsageTracker, PLAN_LIMITS } = require('./lib/usage-tracker');
 
 const DEV_MODE = process.argv.includes('--dev');
 
@@ -23,6 +24,7 @@ const LIB_DIR = path.join(__dirname, 'lib');
 async function main() {
   const port = await findAvailablePort(3001);
   const sessionManager = new SessionManager();
+  const usageTracker = new UsageTracker();
 
   // Initialize sessions (start fresh)
   await sessionManager.loadSessions();
@@ -53,12 +55,16 @@ async function main() {
   // WebSocket server
   const wss = new WebSocketServer({ server });
 
-  wss.on('connection', (ws) => {
+  wss.on('connection', async (ws) => {
     // Send current sessions on connect
     ws.send(JSON.stringify({
       type: 'sessions',
       sessions: sessionManager.getAllSessions(),
     }));
+
+    // Send usage data on connect
+    const usage = await usageTracker.getUsage();
+    ws.send(JSON.stringify({ type: 'usage', usage, planLimits: PLAN_LIMITS }));
 
     ws.on('message', (data) => {
       try {
@@ -93,6 +99,12 @@ async function main() {
   sessionManager.on('summary', ({ sessionId, summary }) => {
     broadcast(wss, { type: 'summary', sessionId, summary });
   });
+
+  // Periodic usage refresh (every 3 min)
+  setInterval(async () => {
+    const usage = await usageTracker.getUsage();
+    broadcast(wss, { type: 'usage', usage, planLimits: PLAN_LIMITS });
+  }, 180000);
 
   // Dev mode: watch files and trigger browser reload
   if (DEV_MODE) {
