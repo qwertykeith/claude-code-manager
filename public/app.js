@@ -28,6 +28,7 @@
   const terminalEl = document.getElementById('terminal');
   const noSessionEl = document.getElementById('no-session');
   const newSessionBtn = document.getElementById('new-session');
+  const openVscodeBtn = document.getElementById('open-vscode');
   const usage5hrEl = document.getElementById('usage-5hr');
   const planSelectorEl = document.getElementById('plan-selector');
 
@@ -122,6 +123,10 @@
     newSessionBtn.addEventListener('click', () => {
       pendingCreate = true;
       send({ type: 'create' });
+    });
+
+    openVscodeBtn.addEventListener('click', () => {
+      send({ type: 'open-vscode' });
     });
 
     // Close name editing on escape

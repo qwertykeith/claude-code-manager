@@ -3,6 +3,7 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
+const { exec } = require('child_process');
 const { WebSocketServer } = require('ws');
 
 const { findAvailablePort } = require('./lib/port-finder');
@@ -182,6 +183,21 @@ function handleMessage(ws, msg, sessionManager, wss) {
     case 'delete':
       sessionManager.deleteSession(msg.sessionId);
       break;
+
+    case 'open-vscode': {
+      const cwd = process.cwd();
+      if (process.platform === 'darwin') {
+        // Run code, then activate the editor window
+        exec(`code "${cwd}" && sleep 0.3 && osascript -e 'tell application "System Events" to set frontmost of first process whose name contains "Code" or name contains "Cursor" to true'`, (err) => {
+          if (err) console.error('Editor open failed:', err.message);
+        });
+      } else {
+        exec(`code "${cwd}"`, (err) => {
+          if (err) console.error('Editor open failed:', err.message);
+        });
+      }
+      break;
+    }
   }
 }
 

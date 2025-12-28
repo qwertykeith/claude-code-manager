@@ -1,6 +1,6 @@
 # Claude Manager
 
-Manage multiple sessions of Claude Code more easily
+Manage many sessions of Claude Code more easily and simply
 
 I missed the agent workflow in cursor when I moved to CC exclusively so made this to replace it
 
