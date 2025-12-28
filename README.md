@@ -7,7 +7,10 @@ I missed the agent workflow in cursor when I moved to CC exclusively so made thi
 ## Install
 
 ```bash
-npm install -g github:qwertykeith/claude-manager
+git clone https://github.com/qwertykeith/claude-manager.git
+cd claude-manager
+npm install
+npm link
 ```
 
 Then run from any directory you want to work in:
@@ -16,13 +19,12 @@ Then run from any directory you want to work in:
 claude-manager
 ```
 
-> **Note:** npx doesn't work reliably due to native module issues with node-pty.
-
 ## Upgrade
 
 ```bash
-npm uninstall -g claude-manager
-npm install -g github:qwertykeith/claude-manager
+cd path/to/claude-manager
+git pull
+npm install
 ```
 
 ## Requirements
