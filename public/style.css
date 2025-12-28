@@ -46,6 +46,12 @@ body {
   font-weight: 600;
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .usage-display {
   display: flex;
   align-items: center;
