@@ -360,25 +360,13 @@
       dot.className = `status-dot ${status}`;
     }
 
-    // Update badge (waiting/draft indicator)
-    const content = sessionEl.querySelector('.session-content');
-    if (content) {
-      // Remove existing badges container
-      const oldBadges = content.querySelector('.session-badges');
-      if (oldBadges) oldBadges.remove();
-
-      // Add new badge if needed
+    // Update badge content (keep container to prevent layout shift)
+    const badgesDiv = sessionEl.querySelector('.session-badges');
+    if (badgesDiv) {
       if (status === 'waiting' || status === 'draft') {
-        const badgesDiv = document.createElement('div');
-        badgesDiv.className = 'session-badges';
-        const badge = document.createElement('span');
-        badge.className = status === 'waiting' ? 'waiting-badge' : 'draft-badge';
-        badge.textContent = status === 'waiting' ? '?' : '✎';
-        badgesDiv.appendChild(badge);
-        const header = content.querySelector('.session-header');
-        if (header) {
-          header.after(badgesDiv);
-        }
+        badgesDiv.innerHTML = `<span class="${status === 'waiting' ? 'waiting-badge' : 'draft-badge'}">${status === 'waiting' ? '?' : '✎'}</span>`;
+      } else {
+        badgesDiv.innerHTML = '';
       }
     }
   }

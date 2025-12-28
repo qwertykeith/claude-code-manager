@@ -430,6 +430,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: flex-end;
+  min-width: 32px;
 }
 
 .session-time {
