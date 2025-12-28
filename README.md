@@ -4,6 +4,14 @@ Manage many sessions of Claude Code more easily and simply
 
 I missed the agent workflow in cursor when I moved to CC exclusively so made this to replace it
 
+## Features
+
+- Manage multiple Claude Code sessions in one UI
+- Real-time status indicators
+- Track your usage against plan limits
+- Prompt summarization
+- One-click "Open IDE" to jump to your editor
+
 ## Install
 
 ```bash

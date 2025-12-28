@@ -11,6 +11,24 @@
     "dev": "node server.js --dev",
     "postinstall": "node scripts/fix-pty-permissions.js"
   },
+  "keywords": [
+    "claude",
+    "claude-code",
+    "ai",
+    "terminal",
+    "session-manager",
+    "cli",
+    "anthropic"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/qwertykeith/claude-manager.git"
+  },
+  "bugs": {
+    "url": "https://github.com/qwertykeith/claude-manager/issues"
+  },
+  "homepage": "https://github.com/qwertykeith/claude-manager#readme",
+  "author": "qwertykeith",
   "dependencies": {
     "chokidar": "^3.6.0",
     "node-pty": "^1.0.0",

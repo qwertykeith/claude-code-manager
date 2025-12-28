@@ -3,7 +3,7 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
-const { exec } = require('child_process');
+const { spawn } = require('child_process');
 const { WebSocketServer } = require('ws');
 
 const { findAvailablePort } = require('./lib/port-finder');
@@ -22,6 +22,54 @@ const MIME_TYPES = {
 const PUBLIC_DIR = path.join(__dirname, 'public');
 const LIB_DIR = path.join(__dirname, 'lib');
 
+// UUID v4 regex for session ID validation
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+/**
+ * Validate WebSocket message fields
+ * @returns {boolean} true if valid
+ */
+function validateMessage(msg) {
+  if (!msg || typeof msg !== 'object') return false;
+  if (typeof msg.type !== 'string') return false;
+
+  // Validate sessionId if present
+  if ('sessionId' in msg) {
+    if (typeof msg.sessionId !== 'string' || !UUID_REGEX.test(msg.sessionId)) {
+      return false;
+    }
+  }
+
+  // Validate specific message types
+  switch (msg.type) {
+    case 'create':
+    case 'open-vscode':
+      return true;
+
+    case 'switch':
+    case 'archive':
+    case 'unarchive':
+    case 'delete':
+      return 'sessionId' in msg;
+
+    case 'input':
+      return 'sessionId' in msg && typeof msg.data === 'string';
+
+    case 'rename':
+      return 'sessionId' in msg &&
+        typeof msg.name === 'string' &&
+        msg.name.length <= 200;
+
+    case 'resize':
+      return 'sessionId' in msg &&
+        typeof msg.cols === 'number' && msg.cols > 0 && msg.cols <= 500 &&
+        typeof msg.rows === 'number' && msg.rows > 0 && msg.rows <= 200;
+
+    default:
+      return false;
+  }
+}
+
 async function main() {
   const port = await findAvailablePort(3001);
   const sessionManager = new SessionManager();
@@ -33,7 +81,14 @@ async function main() {
   // HTTP server for static files (no caching in dev mode)
   const server = http.createServer((req, res) => {
     let filePath = req.url === '/' ? '/index.html' : req.url.split('?')[0];
-    filePath = path.join(PUBLIC_DIR, filePath);
+
+    // Security: resolve path and verify it stays within PUBLIC_DIR
+    filePath = path.resolve(PUBLIC_DIR, '.' + filePath);
+    if (!filePath.startsWith(PUBLIC_DIR + path.sep) && filePath !== PUBLIC_DIR) {
+      res.writeHead(403);
+      res.end('Forbidden');
+      return;
+    }
 
     const ext = path.extname(filePath);
     const contentType = MIME_TYPES[ext] || 'application/octet-stream';
@@ -70,9 +125,12 @@ async function main() {
     ws.on('message', (data) => {
       try {
         const msg = JSON.parse(data.toString());
+        if (!validateMessage(msg)) {
+          return; // Silently ignore invalid messages
+        }
         handleMessage(ws, msg, sessionManager, wss);
       } catch (e) {
-        console.error('Invalid message:', e);
+        // JSON parse error - ignore malformed messages
       }
     });
 
@@ -135,7 +193,8 @@ async function main() {
     process.exit(0);
   });
 
-  server.listen(port, async () => {
+  // Security: bind to localhost only - this tool should never be network-accessible
+  server.listen(port, '127.0.0.1', async () => {
     const url = `http://localhost:${port}`;
     console.log(`Claude Manager running at ${url}${DEV_MODE ? ' (dev mode)' : ''}`);
     // Dynamic import for ESM-only 'open' package
@@ -185,16 +244,19 @@ function handleMessage(ws, msg, sessionManager, wss) {
       break;
 
     case 'open-vscode': {
+      // Security: use spawn with args array to avoid shell injection
       const cwd = process.cwd();
+      const codeProc = spawn('code', [cwd], { stdio: 'ignore', detached: true });
+      codeProc.unref();
+      codeProc.on('error', (err) => console.error('Editor open failed:', err.message));
+
+      // On macOS, activate the editor window after a short delay
       if (process.platform === 'darwin') {
-        // Run code, then activate the editor window
-        exec(`code "${cwd}" && sleep 0.3 && osascript -e 'tell application "System Events" to set frontmost of first process whose name contains "Code" or name contains "Cursor" to true'`, (err) => {
-          if (err) console.error('Editor open failed:', err.message);
-        });
-      } else {
-        exec(`code "${cwd}"`, (err) => {
-          if (err) console.error('Editor open failed:', err.message);
-        });
+        setTimeout(() => {
+          const script = 'tell application "System Events" to set frontmost of first process whose name contains "Code" or name contains "Cursor" to true';
+          const osa = spawn('osascript', ['-e', script], { stdio: 'ignore' });
+          osa.on('error', () => {}); // Ignore activation errors
+        }, 300);
       }
       break;
     }
