@@ -9,6 +9,7 @@ const { WebSocketServer } = require('ws');
 const { findAvailablePort } = require('./lib/port-finder');
 const { SessionManager } = require('./lib/session-manager');
 const { UsageTracker, PLAN_LIMITS } = require('./lib/usage-tracker');
+const { ContextTracker } = require('./lib/context-tracker');
 
 const DEV_MODE = process.argv.includes('--dev');
 
@@ -74,6 +75,7 @@ async function main() {
   const port = await findAvailablePort(3001);
   const sessionManager = new SessionManager();
   const usageTracker = new UsageTracker();
+  const contextTracker = new ContextTracker();
 
   // Initialize sessions (start fresh)
   await sessionManager.loadSessions();
@@ -164,8 +166,18 @@ async function main() {
     });
   });
 
-  sessionManager.on('output', ({ sessionId, data }) => {
+  sessionManager.on('output', async ({ sessionId, data }) => {
     broadcast(wss, { type: 'output', sessionId, data });
+
+    // Refresh context for this session (invalidate cache first)
+    const session = sessionManager.sessions.get(sessionId);
+    if (session?.cwd) {
+      contextTracker.invalidate(session.cwd);
+      const context = await contextTracker.getContextForCwd(session.cwd);
+      if (context) {
+        broadcast(wss, { type: 'context', sessionId, ...context });
+      }
+    }
   });
 
   sessionManager.on('status', ({ sessionId, status }) => {
@@ -250,6 +262,15 @@ function handleMessage(ws, msg, sessionManager, wss) {
         sessionId: msg.sessionId,
         data: buffer,
       }));
+      // Send context for this session
+      const switchSession = sessionManager.sessions.get(msg.sessionId);
+      if (switchSession?.cwd) {
+        contextTracker.getContextForCwd(switchSession.cwd).then((context) => {
+          if (context) {
+            ws.send(JSON.stringify({ type: 'context', sessionId: msg.sessionId, ...context }));
+          }
+        });
+      }
       break;
 
     case 'input':

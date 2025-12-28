@@ -330,6 +330,26 @@ body {
   letter-spacing: 0.02em;
 }
 
+.context-indicator {
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+  padding: 2px 6px;
+  background: var(--bg-tertiary);
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.context-indicator.warning {
+  color: var(--warning);
+  background: rgba(212, 168, 83, 0.15);
+}
+
+.context-indicator.critical {
+  color: #e85c5c;
+  background: rgba(232, 92, 92, 0.15);
+}
+
 .status-dot.idle {
   background: var(--idle);
   opacity: 0.6;

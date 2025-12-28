@@ -237,6 +237,15 @@
         }
         updateUsageDisplay();
         break;
+
+      case 'context':
+        const ctxSession = sessions.find(s => s.id === msg.sessionId);
+        if (ctxSession) {
+          ctxSession.contextPct = msg.pct;
+          ctxSession.contextDisplay = msg.display;
+          updateSessionContext(msg.sessionId, msg.display, msg.pct);
+        }
+        break;
     }
   }
 
@@ -323,6 +332,31 @@
     }
   }
 
+  // Surgical update for context changes
+  function updateSessionContext(sessionId, display, pct) {
+    const sessionEl = document.querySelector(`.session-item[data-id="${sessionId}"]`);
+    if (!sessionEl) return;
+
+    const meta = sessionEl.querySelector('.session-meta');
+    if (!meta) return;
+
+    let ctxEl = meta.querySelector('.context-indicator');
+    if (!ctxEl) {
+      // Create on first update - insert before session-time
+      ctxEl = document.createElement('span');
+      ctxEl.className = 'context-indicator';
+      const timeEl = meta.querySelector('.session-time');
+      if (timeEl) {
+        meta.insertBefore(ctxEl, timeEl);
+      } else {
+        meta.appendChild(ctxEl);
+      }
+    }
+
+    ctxEl.textContent = display;
+    ctxEl.className = 'context-indicator' + (pct >= 95 ? ' critical' : pct >= 80 ? ' warning' : '');
+  }
+
   function renderSessions() {
     const sortByDate = (a, b) => new Date(b.lastActivity || b.createdAt) - new Date(a.lastActivity || a.createdAt);
     const active = sessions.filter((s) => !s.archived).sort(sortByDate);
@@ -396,6 +430,10 @@
         ? '<span class="draft-badge">✎</span>'
         : '';
 
+    const contextIndicator = session.contextDisplay
+      ? `<span class="context-indicator${session.contextPct >= 95 ? ' critical' : session.contextPct >= 80 ? ' warning' : ''}">${session.contextDisplay}</span>`
+      : '';
+
     const timeAgo = relativeTime(session.lastActivity || session.createdAt);
 
     return `
@@ -405,6 +443,7 @@
           <div class="session-content">
             <div class="session-meta">
               ${statusBadge}
+              ${contextIndicator}
               <span class="session-time">${timeAgo}</span>
               <div class="session-actions-inline">${actions}</div>
             </div>

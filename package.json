@@ -1,10 +1,10 @@
 {
-  "name": "@qwertykeith/claude-code-session-manager",
+  "name": "@qwertykeith/claude-code-manager",
   "version": "1.0.0",
   "description": "Simple multi-session workflow manager for Claude Code",
   "main": "server.js",
   "bin": {
-    "claude-manager": "./server.js"
+    "claude-code-manager": "./server.js"
   },
   "scripts": {
     "start": "node server.js",
@@ -32,12 +32,12 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/qwertykeith/claude-manager.git"
+    "url": "git+https://github.com/qwertykeith/claude-code-manager.git"
   },
   "bugs": {
-    "url": "https://github.com/qwertykeith/claude-manager/issues"
+    "url": "https://github.com/qwertykeith/claude-code-manager/issues"
   },
-  "homepage": "https://github.com/qwertykeith/claude-manager#readme",
+  "homepage": "https://github.com/qwertykeith/claude-code-manager#readme",
   "author": "qwertykeith",
   "dependencies": {
     "chokidar": "^3.6.0",

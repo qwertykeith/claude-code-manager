@@ -15,7 +15,7 @@ I missed the agent workflow in cursor when I moved to CC exclusively so made thi
 ## Install
 
 ```bash
-npx @qwertykeith/claude-code-session-manager
+npx @qwertykeith/claude-code-manager
 ```
 
 ## Requirements

@@ -25,7 +25,7 @@ A local web app for managing multiple Claude Code terminal sessions. Shows statu
 ## Project Structure
 
 ```
-claude-manager/
+claude-code-manager/
 ├── package.json
 ├── server.js              # Main entry point
 ├── lib/
@@ -132,9 +132,9 @@ Status sent to frontend via WebSocket whenever it changes.
 
 Config file location:
 
-- macOS: `~/.config/claude-manager/sessions.json`
-- Linux: `~/.config/claude-manager/sessions.json`
-- Windows: `%APPDATA%\claude-manager\sessions.json`
+- macOS: `~/.config/claude-code-manager/sessions.json`
+- Linux: `~/.config/claude-code-manager/sessions.json`
+- Windows: `%APPDATA%\claude-code-manager\sessions.json`
 
 Saved on every state change (debounced). Contains array of session objects without the live PTY reference.
 
@@ -318,14 +318,14 @@ npm publish
 Recipients install globally:
 
 ```bash
-npm install -g claude-manager
-claude-manager
+npm install -g claude-code-manager
+claude-code-manager
 ```
 
 Or run directly without installing:
 
 ```bash
-npx claude-manager
+npx claude-code-manager
 ```
 
 ### Option 2: npm pack (shareable tarball)
@@ -334,14 +334,14 @@ Create a tarball for sharing directly:
 
 ```bash
 npm pack
-# Creates: claude-manager-1.0.0.tgz
+# Creates: claude-code-manager-1.0.0.tgz
 ```
 
 Send the `.tgz` file. Recipient installs with:
 
 ```bash
-npm install -g ./claude-manager-1.0.0.tgz
-claude-manager
+npm install -g ./claude-code-manager-1.0.0.tgz
+claude-code-manager
 ```
 
 ### Option 3: Single binary with pkg (no Node.js required)
@@ -356,7 +356,7 @@ npm install -g pkg
 npx pkg . --targets node18-macos-arm64,node18-macos-x64,node18-linux-x64,node18-win-x64 --out-path dist
 
 # Or just current platform
-npx pkg . --output claude-manager
+npx pkg . --output claude-code-manager
 ```
 
 Produces executables that run without Node.js installed.
@@ -368,7 +368,7 @@ Produces executables that run without Node.js installed.
 If you have Bun installed:
 
 ```bash
-bun build ./server.js --compile --outfile claude-manager
+bun build ./server.js --compile --outfile claude-code-manager
 ```
 
 Produces a single executable for your current platform.
@@ -378,14 +378,14 @@ Produces a single executable for your current platform.
 For quick sharing where recipient has Node.js:
 
 ```bash
-zip -r claude-manager.zip . -x "node_modules/*" -x ".git/*" -x "*.tgz"
+zip -r claude-code-manager.zip . -x "node_modules/*" -x ".git/*" -x "*.tgz"
 ```
 
 Recipient extracts and runs:
 
 ```bash
-unzip claude-manager.zip -d claude-manager
-cd claude-manager
+unzip claude-code-manager.zip -d claude-code-manager
+cd claude-code-manager
 npm install
 npm start
 ```
