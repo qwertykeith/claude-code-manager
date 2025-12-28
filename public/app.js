@@ -29,30 +29,24 @@
   const noSessionEl = document.getElementById('no-session');
   const newSessionBtn = document.getElementById('new-session');
   const openVscodeBtn = document.getElementById('open-vscode');
-  const usage5hrEl = document.getElementById('usage-5hr');
-  const planSelectorEl = document.getElementById('plan-selector');
+  const usageSessionBar = document.getElementById('usage-session-bar');
+  const usageSessionTime = document.getElementById('usage-session-time');
+  const usageWeeklyBar = document.getElementById('usage-weekly-bar');
+  const usageWeeklyTime = document.getElementById('usage-weekly-time');
+  const usageSessionContainer = document.getElementById('usage-session-container');
+  const usageWeeklyContainer = document.getElementById('usage-weekly-container');
 
   // State
   let planLimits = {};
-  let currentUsage = null;
+  let currentUsage = null; // JSONL estimate fallback
+  let accurateUsage = null; // From /status
+  let usageSource = null; // 'claude-status' or 'jsonl-estimate'
 
   // Initialize
   function init() {
     initTerminal();
     initWebSocket();
     initEventListeners();
-    initPlanSelector();
-  }
-
-  function initPlanSelector() {
-    // Load saved plan
-    const savedPlan = localStorage.getItem('claudePlan') || '';
-    planSelectorEl.value = savedPlan;
-
-    planSelectorEl.addEventListener('change', () => {
-      localStorage.setItem('claudePlan', planSelectorEl.value);
-      updateUsageDisplay();
-    });
   }
 
   function initTerminal() {
@@ -233,27 +227,67 @@
         break;
 
       case 'usage':
-        currentUsage = msg.usage;
         planLimits = msg.planLimits || {};
+        usageSource = msg.source || 'jsonl-estimate';
+        if (msg.accurate) {
+          accurateUsage = msg.accurate;
+        }
+        if (msg.usage) {
+          currentUsage = msg.usage;
+        }
         updateUsageDisplay();
         break;
     }
   }
 
   function updateUsageDisplay() {
-    if (!currentUsage) return;
+    // Prefer accurate data, fall back to estimate
+    if (accurateUsage && usageSource === 'claude-status') {
+      // Accurate data from /status
+      const session = accurateUsage.session || {};
+      const weekAll = accurateUsage.weekAll || {};
 
-    const messages = currentUsage.fiveHour.messages;
-    const selectedPlan = planSelectorEl.value;
+      // Session display
+      if (session.percent !== null && session.percent !== undefined) {
+        const pct = session.percent;
+        usageSessionBar.style.width = `${pct}%`;
+        usageSessionBar.className = 'usage-bar-fill' + (pct >= 90 ? ' critical' : pct >= 70 ? ' warning' : '');
+        const timeUntil = formatTimeUntil(parseResetTime(session.resetTime));
+        usageSessionTime.textContent = timeUntil || '--';
+        usageSessionContainer.title = `Session: ${pct}% used${session.resetTime ? ' • resets ' + session.resetTime : ''}`;
+      } else {
+        usageSessionBar.style.width = '0%';
+        usageSessionTime.textContent = '--';
+      }
 
-    if (selectedPlan && planLimits[selectedPlan]) {
-      const limit = planLimits[selectedPlan];
-      const pct = Math.round((messages / limit) * 100);
-      usage5hrEl.textContent = `~${pct}%`;
-      usage5hrEl.title = `~${messages} / ${limit} messages (approx)`;
+      // Weekly display
+      if (weekAll.percent !== null && weekAll.percent !== undefined) {
+        const pct = weekAll.percent;
+        usageWeeklyBar.style.width = `${pct}%`;
+        usageWeeklyBar.className = 'usage-bar-fill' + (pct >= 90 ? ' critical' : pct >= 70 ? ' warning' : '');
+        const timeUntil = formatTimeUntil(parseResetTime(weekAll.resetTime));
+        usageWeeklyTime.textContent = timeUntil || '--';
+        usageWeeklyContainer.title = `Weekly: ${pct}% used${weekAll.resetTime ? ' • resets ' + weekAll.resetTime : ''}`;
+      } else {
+        usageWeeklyBar.style.width = '0%';
+        usageWeeklyTime.textContent = '--';
+      }
+
+    } else if (currentUsage) {
+      // Fallback to JSONL estimate
+      usageSessionBar.style.width = '0%';
+      usageSessionTime.textContent = '~';
+      usageSessionContainer.title = 'Estimate unavailable - couldn\'t fetch from Claude';
+      usageWeeklyBar.style.width = '0%';
+      usageWeeklyTime.textContent = '~';
+      usageWeeklyContainer.title = 'Weekly data unavailable - couldn\'t fetch from Claude';
+
     } else {
-      usage5hrEl.textContent = `~${messages} msgs`;
-      usage5hrEl.title = 'Select a plan to see percentage';
+      // No data yet
+      usageSessionBar.style.width = '0%';
+      usageSessionTime.textContent = '--';
+      usageWeeklyBar.style.width = '0%';
+      usageWeeklyTime.textContent = '--';
     }
   }
 
@@ -435,6 +469,59 @@
     if (hours < 24) return `${hours}h`;
     const days = Math.floor(hours / 24);
     return `${days}d`;
+  }
+
+  // Parse reset time string and return ms until reset
+  function parseResetTime(resetStr) {
+    if (!resetStr) return null;
+    const now = new Date();
+
+    // Session format: "10:59pm" - assumes today or tomorrow
+    const timeMatch = resetStr.match(/^(\d{1,2}):?(\d{2})?\s*(am|pm)$/i);
+    if (timeMatch) {
+      let hours = parseInt(timeMatch[1]);
+      const mins = parseInt(timeMatch[2] || '0');
+      const isPM = timeMatch[3].toLowerCase() === 'pm';
+      if (isPM && hours !== 12) hours += 12;
+      if (!isPM && hours === 12) hours = 0;
+
+      const reset = new Date(now);
+      reset.setHours(hours, mins, 0, 0);
+      if (reset <= now) reset.setDate(reset.getDate() + 1);
+      return reset.getTime() - now.getTime();
+    }
+
+    // Weekly format: "Jan 3, 2026, 10:59am" or "Jan 3, 10:59am"
+    const dateMatch = resetStr.match(/([A-Za-z]+)\s+(\d{1,2}),?\s*(\d{4})?,?\s*(\d{1,2}):?(\d{2})?\s*(am|pm)/i);
+    if (dateMatch) {
+      const months = { jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5, jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11 };
+      const month = months[dateMatch[1].toLowerCase().slice(0, 3)];
+      const day = parseInt(dateMatch[2]);
+      const year = dateMatch[3] ? parseInt(dateMatch[3]) : now.getFullYear();
+      let hours = parseInt(dateMatch[4]);
+      const mins = parseInt(dateMatch[5] || '0');
+      const isPM = dateMatch[6].toLowerCase() === 'pm';
+      if (isPM && hours !== 12) hours += 12;
+      if (!isPM && hours === 12) hours = 0;
+
+      const reset = new Date(year, month, day, hours, mins, 0, 0);
+      return reset.getTime() - now.getTime();
+    }
+
+    return null;
+  }
+
+  // Format ms until reset as relative string
+  function formatTimeUntil(ms) {
+    if (ms === null || ms < 0) return null;
+    const mins = Math.floor(ms / 60000);
+    if (mins < 60) return `${mins}m`;
+    const hours = Math.floor(mins / 60);
+    const remMins = mins % 60;
+    if (hours < 24) return remMins > 0 ? `${hours}h ${remMins}m` : `${hours}h`;
+    const days = Math.floor(hours / 24);
+    const remHours = hours % 24;
+    return remHours > 0 ? `${days}d ${remHours}h` : `${days}d`;
   }
 
   // Start the app

@@ -118,9 +118,26 @@ async function main() {
       sessions: sessionManager.getAllSessions(),
     }));
 
-    // Send usage data on connect
-    const usage = await usageTracker.getUsage();
-    ws.send(JSON.stringify({ type: 'usage', usage, planLimits: PLAN_LIMITS }));
+    // Send usage data on connect - start with estimate, then send accurate
+    const estimateUsage = await usageTracker.getUsage();
+    ws.send(JSON.stringify({
+      type: 'usage',
+      usage: estimateUsage,
+      planLimits: PLAN_LIMITS,
+      source: 'jsonl-estimate',
+    }));
+
+    // Fetch accurate usage in background and send when ready
+    usageTracker.getAccurateUsage().then((accurate) => {
+      if (accurate && ws.readyState === ws.OPEN) {
+        ws.send(JSON.stringify({
+          type: 'usage',
+          accurate,
+          planLimits: PLAN_LIMITS,
+          source: 'claude-status',
+        }));
+      }
+    });
 
     ws.on('message', (data) => {
       try {
@@ -159,11 +176,27 @@ async function main() {
     broadcast(wss, { type: 'summary', sessionId, summary });
   });
 
-  // Periodic usage refresh (every 3 min)
+  // Periodic usage refresh (every 4 min - matches accurate cache TTL)
   setInterval(async () => {
-    const usage = await usageTracker.getUsage();
-    broadcast(wss, { type: 'usage', usage, planLimits: PLAN_LIMITS });
-  }, 180000);
+    // Try accurate first, fall back to estimate
+    const accurate = await usageTracker.getAccurateUsage();
+    if (accurate) {
+      broadcast(wss, {
+        type: 'usage',
+        accurate,
+        planLimits: PLAN_LIMITS,
+        source: 'claude-status',
+      });
+    } else {
+      const usage = await usageTracker.getUsage();
+      broadcast(wss, {
+        type: 'usage',
+        usage,
+        planLimits: PLAN_LIMITS,
+        source: 'jsonl-estimate',
+      });
+    }
+  }, 240000);
 
   // Dev mode: watch files and trigger browser reload
   if (DEV_MODE) {

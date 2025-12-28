@@ -1,38 +1,21 @@
 # Claude Manager
 
-Manage many sessions of Claude Code more easily and simply
+Manage many sessions of Claude Code simply and more easily
 
 I missed the agent workflow in cursor when I moved to CC exclusively so made this to replace it
 
 ## Features
 
-- Manage multiple Claude Code sessions in one UI
-- Real-time status indicators
+- Manage multiple Claude Code sessions in one UI with the fully featured CLI
+- Real-time status indicators to quickly see which session needs attention
 - Track your usage against plan limits
 - Prompt summarization
-- One-click "Open IDE" to jump to your editor
+- One-click "Open IDE" to open your code editor
 
 ## Install
 
 ```bash
-git clone https://github.com/qwertykeith/claude-manager.git
-cd claude-manager
-npm install
-npm link
-```
-
-Then run from any directory you want to work in:
-
-```bash
-claude-manager
-```
-
-## Upgrade
-
-```bash
-cd path/to/claude-manager
-git pull
-npm install
+npx @qwertykeith/claude-code-session-manager
 ```
 
 ## Requirements

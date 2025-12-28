@@ -1,0 +1,7 @@
+.claude/
+.git/
+.gitignore
+PLAN.md
+SECURITY.md
+*.log
+node_modules/

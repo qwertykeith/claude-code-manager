@@ -15,16 +15,16 @@
       <button id="new-session" class="btn btn-primary">+ New Session</button>
       <button id="open-vscode" class="btn btn-ghost" title="Open in VS Code">Open IDE</button>
       <div id="usage-display" class="usage-display">
-        <span class="usage-item">
-          <span class="usage-label">5hr:</span>
-          <span id="usage-5hr">--</span>
-        </span>
-        <select id="plan-selector" class="plan-selector" title="Select your Claude plan">
-          <option value="">Plan</option>
-          <option value="pro">Pro</option>
-          <option value="max100">Max $100</option>
-          <option value="max200">Max $200</option>
-        </select>
+        <div class="usage-item" id="usage-session-container" title="Session usage (5hr window)">
+          <span class="usage-label">5hr</span>
+          <div class="usage-bar"><div class="usage-bar-fill" id="usage-session-bar"></div></div>
+          <span class="usage-time" id="usage-session-time">--</span>
+        </div>
+        <div class="usage-item" id="usage-weekly-container" title="Weekly usage (all models)">
+          <span class="usage-label">Wk</span>
+          <div class="usage-bar"><div class="usage-bar-fill" id="usage-weekly-bar"></div></div>
+          <span class="usage-time" id="usage-weekly-time">--</span>
+        </div>
       </div>
       <h1>Claude Manager</h1>
     </header>

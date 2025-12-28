@@ -49,8 +49,8 @@ body {
 .usage-display {
   display: flex;
   align-items: center;
-  gap: 12px;
-  font-size: 13px;
+  gap: 16px;
+  font-size: 12px;
   color: var(--text-secondary);
   font-variant-numeric: tabular-nums;
 }
@@ -58,39 +58,44 @@ body {
 .usage-item {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
+  cursor: help;
 }
 
 .usage-label {
   color: var(--text-secondary);
-  opacity: 0.7;
+  opacity: 0.6;
+  font-size: 11px;
+  min-width: 22px;
 }
 
-#usage-5hr {
-  color: var(--text-primary);
-  font-weight: 500;
-  cursor: help;
-}
-
-.plan-selector {
+.usage-bar {
+  width: 60px;
+  height: 6px;
   background: var(--bg-tertiary);
-  border: 1px solid var(--border);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.usage-bar-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 3px;
+  transition: width 0.3s ease, background 0.3s ease;
+}
+
+.usage-bar-fill.warning {
+  background: var(--warning);
+}
+
+.usage-bar-fill.critical {
+  background: #e05555;
+}
+
+.usage-time {
   color: var(--text-secondary);
-  padding: 4px 8px;
-  border-radius: 6px;
-  font-size: 12px;
-  cursor: pointer;
-  outline: none;
-}
-
-.plan-selector:hover {
-  border-color: var(--accent);
-  color: var(--text-primary);
-}
-
-.plan-selector:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 2px rgba(217, 119, 87, 0.2);
+  font-size: 11px;
+  min-width: 45px;
 }
 
 .btn {
