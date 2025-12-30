@@ -2,8 +2,6 @@
 
 Manage many sessions of Claude Code simply and more easily
 
-I missed the agent workflow in cursor when I moved to CC exclusively so made this to replace it
-
 ![Claude Manager Screenshot](images/screenshot.png)
 
 ## Features
@@ -12,9 +10,10 @@ I missed the agent workflow in cursor when I moved to CC exclusively so made thi
 - Real-time status indicators to quickly see which session needs attention
 - Track your usage against plan limits
 - Prompt summarization
-- One-click "Open IDE" to open your code editor
 
-## Install
+## Use
+
+To run directly from npm using your Claude CLI
 
 ```bash
 npx @qwertykeith/claude-code-manager
