@@ -4,7 +4,7 @@
   "description": "Simple multi-session workflow manager for Claude Code",
   "main": "server.js",
   "bin": {
-    "claude-code-manager": "./server.js"
+    "claude-code-manager": "server.js"
   },
   "scripts": {
     "start": "node server.js",
