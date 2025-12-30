@@ -4,6 +4,8 @@ Manage many sessions of Claude Code simply and more easily
 
 I missed the agent workflow in cursor when I moved to CC exclusively so made this to replace it
 
+![Claude Manager Screenshot](images/screenshot.png)
+
 ## Features
 
 - Manage multiple Claude Code sessions in one UI with the fully featured CLI
