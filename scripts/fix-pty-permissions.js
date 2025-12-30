@@ -2,9 +2,19 @@
 const fs = require('fs');
 const path = require('path');
 
-const prebuildsDir = path.join(__dirname, '..', 'node_modules', 'node-pty', 'prebuilds');
+// npm may hoist node-pty to different locations depending on install context
+const possiblePaths = [
+  // Local development: ./node_modules/node-pty/prebuilds
+  path.join(__dirname, '..', 'node_modules', 'node-pty', 'prebuilds'),
+  // Hoisted install: ../../../node-pty/prebuilds (from @qwertykeith/claude-code-manager/scripts/)
+  path.join(__dirname, '..', '..', '..', 'node-pty', 'prebuilds'),
+  // npx/global: ../../node-pty/prebuilds
+  path.join(__dirname, '..', '..', 'node-pty', 'prebuilds'),
+];
 
-if (!fs.existsSync(prebuildsDir)) {
+const prebuildsDir = possiblePaths.find(p => fs.existsSync(p));
+
+if (!prebuildsDir) {
   process.exit(0);
 }
 
