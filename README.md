@@ -22,6 +22,7 @@ npx @qwertykeith/claude-code-manager
 
 - Node.js 18+
 - Claude Code CLI installed (`claude` command available)
+- Python 3 (optional) - enables accurate usage %
 
 ## Development
 
