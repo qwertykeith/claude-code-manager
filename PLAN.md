@@ -67,7 +67,7 @@ claude-code-manager/
 ### Starting the App
 
 1. Server starts
-2. Find available port (start at 3001, increment until free)
+2. Find available port (start at 41917, increment until free)
 3. Load persisted sessions from config file
 4. Persisted sessions load as "idle" with no running process (user can reconnect or archive)
 5. Auto-open browser to `localhost:{port}`
@@ -208,7 +208,7 @@ Session card shows summary text directly (no separate name/summary). Archive `×
 ### Phase 1: Minimal Server
 
 1. Create package.json with dependencies: `ws`, `node-pty`, `open` (for auto-opening browser)
-2. Implement port-finder.js — scan from 3001 until a port is free
+2. Implement port-finder.js — scan from 41917 until a port is free
 3. Basic server.js — start HTTP server, serve static files from `public/`
 4. Auto-open browser on startup using `open` package
 
@@ -268,20 +268,24 @@ Session card shows summary text directly (no separate name/summary). Archive `×
 ### v0.2 Fixes
 
 **Summary Display Fix**
+
 - Fixed ANSI escape codes appearing in summaries (was showing `[i` instead of summary)
 - Added stripping of ANSI codes, OSC sequences, and control characters in `summarizer.js`
 
 **Session Card Redesign**
+
 - Removed redundant folder name display (since all sessions are in the same cwd)
 - Shows summary as main text, falls back to name if no summary
 - Archive button moved inline, only shows on hover, uses subtle `×` icon
 
 **Status Detection Improvements**
+
 - Fixed status flashing on focus/typing by requiring substantial output (>20 chars) before showing "working"
 - Added 150ms debounce for small output bursts
 - Status no longer flickers when user focuses terminal or types
 
 **Waiting State Indicator**
+
 - Added `?` badge next to sessions waiting for user input
 - Added pulsing animation to waiting status dot
 - Makes it clear which sessions need attention
@@ -411,6 +415,7 @@ npm run dev
 ```
 
 Dev mode enables:
+
 - **Hot reload**: When files in `public/` or `lib/` change, connected browsers automatically reload
 - **No caching**: Static files served with `Cache-Control: no-store`
 - **Console logging**: File change events logged to terminal
