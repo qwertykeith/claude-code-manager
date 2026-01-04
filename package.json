@@ -1,6 +1,6 @@
 {
   "name": "@qwertykeith/claude-code-manager",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Simple multi-session workflow manager for Claude Code",
   "main": "server.js",
   "bin": {
