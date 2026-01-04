@@ -104,27 +104,23 @@
     gain.gain.setValueAtTime(vol, now)
 
     if (type === 'waiting') {
-      // Rising double-tap: needs attention
-      [0, 0.12].forEach((offset, i) => {
-        const osc = audioCtx.createOscillator()
-        osc.type = 'sine'
-        osc.frequency.setValueAtTime(440 + i * 80, now + offset)
-        osc.connect(gain)
-        osc.start(now + offset)
-        osc.stop(now + offset + 0.08)
-      })
-      gain.gain.setValueAtTime(vol, now + 0.2)
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3)
-    } else {
-      // Soft descending: task complete
+      // Single short blip
       const osc = audioCtx.createOscillator()
       osc.type = 'sine'
-      osc.frequency.setValueAtTime(520, now)
-      osc.frequency.exponentialRampToValueAtTime(320, now + 0.2)
+      osc.frequency.setValueAtTime(480, now)
       osc.connect(gain)
       osc.start(now)
-      osc.stop(now + 0.2)
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25)
+      osc.stop(now + 0.025)
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.03)
+    } else {
+      // Single short blip, lower pitch
+      const osc = audioCtx.createOscillator()
+      osc.type = 'sine'
+      osc.frequency.setValueAtTime(400, now)
+      osc.connect(gain)
+      osc.start(now)
+      osc.stop(now + 0.025)
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.03)
     }
   }
 
@@ -342,11 +338,12 @@
           const prevStatus = previousStatus.get(msg.sessionId)
 
           // Notify on important status changes when window not focused
-          if (!windowHasFocus) {
+          // Only notify if Claude was actually working - ignore idle->waiting transitions (terminal noise)
+          if (!windowHasFocus && prevStatus === 'working') {
             if (msg.status === 'waiting') {
               console.log('[audio] waiting trigger, prev:', prevStatus)
               notifyStatus('waiting')
-            } else if (prevStatus === 'working' && msg.status === 'idle') {
+            } else if (msg.status === 'idle') {
               console.log('[audio] finished trigger, prev:', prevStatus, 'new:', msg.status)
               notifyStatus('finished')
             }
