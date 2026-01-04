@@ -48,8 +48,9 @@
   let audioEnabled = localStorage.getItem('audioNotificationsEnabled') === 'true'
   let audioVolumeLevel = parseInt(localStorage.getItem('audioVolume') || '30', 10)
   let windowHasFocus = true
+  let blurTime = 0
   window.addEventListener('focus', () => { windowHasFocus = true })
-  window.addEventListener('blur', () => { windowHasFocus = false })
+  window.addEventListener('blur', () => { windowHasFocus = false; blurTime = Date.now() })
   const previousStatus = new Map() // sessionId -> last known status
   const lastFlashTime = new Map() // sessionId -> timestamp of last flash
   const FLASH_DEBOUNCE_MS = 2000 // min time between flashes per session
@@ -129,6 +130,7 @@
 
   function notifyStatus(type) {
     if (!audioEnabled) return
+    console.log('[audio] playing, focus:', windowHasFocus, 'hasFocus():', document.hasFocus())
     playNotification(type)
   }
 
@@ -342,8 +344,10 @@
           // Notify on important status changes when window not focused
           if (!windowHasFocus) {
             if (msg.status === 'waiting') {
+              console.log('[audio] waiting trigger, prev:', prevStatus)
               notifyStatus('waiting')
             } else if (prevStatus === 'working' && msg.status === 'idle') {
+              console.log('[audio] finished trigger, prev:', prevStatus, 'new:', msg.status)
               notifyStatus('finished')
             }
           }
