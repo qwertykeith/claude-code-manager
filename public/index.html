@@ -15,16 +15,20 @@
       <div class="header-actions">
         <button id="new-session" class="btn btn-primary">+ New Session</button>
         <button id="open-vscode" class="btn btn-ghost" title="Open in VS Code">Open IDE</button>
+        <div class="audio-controls">
+          <button id="audio-toggle" class="btn btn-ghost audio-toggle" title="Audio notifications (off)">🔇</button>
+          <input type="range" id="audio-volume" class="audio-volume" min="0" max="100" value="30" title="Volume">
+        </div>
       </div>
       <div id="usage-display" class="usage-display">
-        <div class="usage-item" id="usage-session-container" title="Session usage (5hr window)">
+        <div class="usage-item" id="usage-session-container" title="Session: 0%">
           <span class="usage-label">5hr</span>
           <div class="usage-bar">
             <div class="usage-bar-fill" id="usage-session-bar"></div>
           </div>
           <span class="usage-time" id="usage-session-time">--</span>
         </div>
-        <div class="usage-item" id="usage-weekly-container" title="Weekly usage (all models)">
+        <div class="usage-item" id="usage-weekly-container" title="Weekly: 0%">
           <span class="usage-label">Wk</span>
           <div class="usage-bar">
             <div class="usage-bar-fill" id="usage-weekly-bar"></div>

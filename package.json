@@ -11,7 +11,8 @@
     "dev": "node server.js --dev",
     "postinstall": "node scripts/fix-pty-permissions.js",
     "prepublishOnly": "npm audit --audit-level=high",
-    "release": "npm publish --access public"
+    "release": "npm publish --access public",
+    "ship": "./scripts/ship.sh"
   },
   "files": [
     "server.js",

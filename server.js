@@ -21,6 +21,7 @@ function debounce(fn, delay) {
 }
 
 const DEV_MODE = process.argv.includes('--dev')
+const NO_OPEN = process.argv.includes('--no-open')
 
 const MIME_TYPES = {
   '.html': 'text/html',
@@ -279,9 +280,11 @@ async function main() {
   server.listen(port, '127.0.0.1', async () => {
     const url = `http://localhost:${port}`
     console.log(`Claude Manager running at ${url}${DEV_MODE ? ' (dev mode)' : ''}`)
-    // Dynamic import for ESM-only 'open' package
-    const open = (await import('open')).default
-    open(url)
+    // Skip opening browser in dev mode (user likely has it open already)
+    if (!NO_OPEN && !DEV_MODE) {
+      const open = (await import('open')).default
+      open(url)
+    }
   })
 }
 
