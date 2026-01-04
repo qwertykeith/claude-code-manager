@@ -30,7 +30,7 @@ git push origin main
 
 # Bump patch version
 npm version patch --no-git-tag-version
-git add package.json
+git add package.json package-lock.json
 git commit -m "bump"
 git push origin main
 
