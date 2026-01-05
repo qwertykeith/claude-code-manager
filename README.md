@@ -12,6 +12,7 @@ Manage many sessions of Claude Code simply and more easily
 - Real-time status indicators to quickly see which session needs attention
 - Track your usage against plan limits
 - Prompt summarization
+- Audio alerts
 
 ## Use
 
