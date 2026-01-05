@@ -4,6 +4,8 @@ Manage many sessions of Claude Code simply and more easily
 
 ![Claude Manager Screenshot](images/screenshot.png)
 
+"Better than the one we use at Atlassian" - friend who works at Atlassian, Jan 2026
+
 ## Features
 
 - Manage multiple Claude Code sessions in one UI with the fully featured CLI
